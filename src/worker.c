@@ -168,14 +168,20 @@ int main(int argc, char *argv[]) {
 
         // TODO 5: Comparar com o hash alvo
         // Se encontrou: salvar resultado e terminar
-        strcmp(start_password, end_password);
+        if(strcmp(start_password, end_password) == 0){
+            save_result(worker_id, current_password);
+            break;
+        }
         
         // TODO 6: Incrementar para a próxima senha
         // DICA: Use a função increment_password implementada acima
+        int prox_senha = increment_password(current_password, charset, charset_len, password_len);
         
         // TODO: Verificar se chegou ao fim do intervalo
         // Se sim: terminar loop
-        
+        if(prox_senha == 0){
+            break;
+        }
         passwords_checked++;
     }
     

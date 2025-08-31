@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include "hash_utils.h"
+#include "md5.h"
 
 /**
  * PROCESSO TRABALHADOR - Mini-Projeto 1: Quebra de Senhas Paralelo
@@ -40,19 +41,19 @@ int increment_password(char *password, const char *charset, int charset_len, int
     for(int t = password_len - 1; t >= 0; t--){
         int index_charset = 0;
         
-        while(password[t] != charset[index_charset] && index_charset < charset_len){
+        while(index_charset < charset_len && password[t] != charset[index_charset]){
             index_charset++; //incrementa
         }
         
         if(index_charset == charset_len){
             return 0;
-        } else if(index_charset < charset_len - 1){
+        }
+        if(index_charset < charset_len - 1){
             password[t] = charset[index_charset + 1];
             return 1;
         } else {
             password[t] = charset[0];
         }
-    
     }
 
     // IMPLEMENTE AQUI:
@@ -72,9 +73,10 @@ int increment_password(char *password, const char *charset, int charset_len, int
  * @return -1 se a < b, 0 se a == b, 1 se a > b
  */
 int password_compare(const char *a, const char *b) {
-    if(strcmp(a, b) == 0){
+    int comp = strcmp(a, b);
+    if(comp == 0){
         return 0;
-    } else if(strcmp(a, b) < 0){
+    } else if(comp < 0){
         return -1;
     } else {
         return 1;
@@ -86,14 +88,9 @@ int password_compare(const char *a, const char *b) {
  * Usado para parada antecipada se outro worker já encontrou a senha
  */
 int check_result_exists() {
-    if(access(RESULT_FILE, F_OK) == 0){
-        if(access(RESULT_FILE, F_OK) == 0){
-            return 1;
-        } else {
-            return 0;
-        }   
-    }
+    return access(RESULT_FILE, F_OK) == 0;
 }
+
 /**
  * Salva a senha encontrada no arquivo de resultado
  * Usa O_CREAT | O_EXCL para garantir escrita atômica (apenas um worker escreve)
@@ -104,7 +101,7 @@ void save_result(int worker_id, const char *password) {
     // DICA: Use O_CREAT | O_EXCL - falha se arquivo já existe
     // FORMATO DO ARQUIVO: "worker_id:password\n"
     
-    int open_arquivo = open(RESULT_FILE O_CREAT O_EXCL O_WRONLY 0644);
+    int open_arquivo = open(RESULT_FILE, O_CREAT | O_EXCL | O_WRONLY, 0644);
 
     if(open_arquivo >= 0){
         char buffer[100];
@@ -143,7 +140,7 @@ int main(int argc, char *argv[]) {
     printf("[Worker %d] Iniciado: %s até %s\n", worker_id, start_password, end_password);
     
     // Buffer para a senha atual
-    char current_password[11];
+    char current_password[password_len + 1];
     strcpy(current_password, start_password);
     
     // Buffer para o hash calculado
@@ -152,19 +149,19 @@ int main(int argc, char *argv[]) {
     // Contadores para estatísticas
     long long passwords_checked = 0;
     time_t start_time = time(NULL);
-    time_t last_progress_time = start_time;
+    //time_t last_progress_time = start_time;
     
     // Loop principal de verificação
     while (1) {
         // TODO 3: Verificar periodicamente se outro worker já encontrou a senha
         // DICA: A cada PROGRESS_INTERVAL senhas, verificar se arquivo resultado existe
-        if(passwords_checked % PROGRESS_INTERVAL == 0){
-            if(check_result_exists){
+        if(passwords_checked % PROGRESS_INTERVAL == 0 && check_result_exists()){
                 break;    
         }
         // TODO 4: Calcular o hash MD5 da senha atual
         // IMPORTANTE: Use a biblioteca MD5 FORNECIDA - md5_string(senha, hash_buffer)
         md5_string(current_password, computed_hash);
+        passwords_checked++;
 
         // TODO 5: Comparar com o hash alvo
         // Se encontrou: salvar resultado e terminar
@@ -182,7 +179,10 @@ int main(int argc, char *argv[]) {
         if(prox_senha == 0){
             break;
         }
-        passwords_checked++;
+        // Checagem se ultrapssou o limite do intervalo
+        if(password_compare(current_password, end_password) > 0){
+            break;
+        }
     }
     
     // Estatísticas finais

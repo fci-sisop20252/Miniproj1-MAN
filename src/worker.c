@@ -40,7 +40,7 @@ int increment_password(char *password, const char *charset, int charset_len, int
     for(int t = password_len - 1; t >= 0; t--){
         int index_charset = 0;
         
-        while(password[t] != password[index_charset] && index_charset < charset_len){
+        while(password[t] != charset[index_charset] && index_charset < charset_len){
             index_charset++; //incrementa
         }
         
@@ -86,7 +86,7 @@ int password_compare(const char *a, const char *b) {
  * Usado para parada antecipada se outro worker já encontrou a senha
  */
 int check_result_exists() {
-    if(access("arquivo.txt", F_OK) == 0){
+    if(access(RESULT_FILE, F_OK) == 0){
         if(access(RESULT_FILE, F_OK) == 0){
             return 1;
         } else {
@@ -104,7 +104,7 @@ void save_result(int worker_id, const char *password) {
     // DICA: Use O_CREAT | O_EXCL - falha se arquivo já existe
     // FORMATO DO ARQUIVO: "worker_id:password\n"
     
-    int open_arquivo = open(RESULT_FILE, O_CREAT, O_EXCL, O_WRONLY, 0644);
+    int open_arquivo = open(RESULT_FILE O_CREAT O_EXCL O_WRONLY 0644);
 
     if(open_arquivo >= 0){
         char buffer[100];
@@ -113,7 +113,7 @@ void save_result(int worker_id, const char *password) {
         write(open_arquivo, buffer, tamanho);
         close(open_arquivo);
     } else {
-        printf("Outro worker já encontrou a senha\n");
+        printf("[Worker %d]Outro worker já encontrou a senha\n", worker_id);
     }
     // IMPLEMENTE AQUI:
     // - Tentar abrir arquivo com O_CREAT | O_EXCL | O_WRONLY
@@ -159,8 +159,8 @@ int main(int argc, char *argv[]) {
         // TODO 3: Verificar periodicamente se outro worker já encontrou a senha
         // DICA: A cada PROGRESS_INTERVAL senhas, verificar se arquivo resultado existe
         if(passwords_checked % PROGRESS_INTERVAL == 0){
-            check_result_exists(worker_id, current_password);
-            break;
+            if(check_result_exists){
+                break;    
         }
         // TODO 4: Calcular o hash MD5 da senha atual
         // IMPORTANTE: Use a biblioteca MD5 FORNECIDA - md5_string(senha, hash_buffer)
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
 
         // TODO 5: Comparar com o hash alvo
         // Se encontrou: salvar resultado e terminar
-        if(strcmp(computed_hash, current_password) == 0){
+        if(strcmp(computed_hash, target_hash) == 0){
             save_result(worker_id, current_password);
             break;
         }

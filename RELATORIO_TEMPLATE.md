@@ -1,15 +1,19 @@
 # Relatório: Mini-Projeto 1 - Quebra-Senhas Paralelo
 
-**Aluno(s):** Nome (Matrícula), Nome (Matrícula),,,  
+**Aluno(s):** André Doerner Duarte(10427938), Matheus Leonardo Cardoso Kroeff(10426434), Naoto Ushizaki(10437455)
 ---
 
 ## 1. Estratégia de Paralelização
 
-
 **Como você dividiu o espaço de busca entre os workers?**
 
-[Explique seu algoritmo de divisão]
+<div align="justify">
+  O espaco de busca foi dividido da seguinte forma: o total de senhas possíveis foi calculado com base na combinação de caracteres (total_passwords *= charset_len) e, em seguida, distribuído igualmente entre os processos (workers). Cada worker é responsável por testar uma faixa específica de senhas, definida por um intervalo de índices numéricos. Como os processos não trabalham diretamente com índices, esses valores são convertidos em senhas reais utilizando o conjunto de caracteres (charset). Dessa forma, cada worker sabe exatamente quais combinações testar dentro de sua faixa designada.
+  
+</div>
 
+##
+  
 **Código relevante:** Cole aqui a parte do coordinator.c onde você calcula a divisão:
 ```c
 // Cole seu código de divisão aqui

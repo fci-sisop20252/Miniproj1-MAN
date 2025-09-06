@@ -8,7 +8,7 @@
 **Como você dividiu o espaço de busca entre os workers?**
 
 <div align="justify">
-  O espaco de busca foi dividido da seguinte forma: o total de senhas possíveis foi calculado com base na combinação de caracteres (total_passwords *= charset_len) e, em seguida, distribuído igualmente entre os processos (workers). Cada worker é responsável por testar uma faixa específica de senhas, definida por um intervalo de índices numéricos. Como os processos não trabalham diretamente com índices, esses valores são convertidos em senhas reais utilizando o conjunto de caracteres (charset). Dessa forma, cada worker sabe exatamente quais combinações testar dentro de sua faixa designada.
+  O espaco de busca foi dividido da seguinte forma: o total de senhas possíveis foi calculado com base na combinação de caracteres (total *= charset_len) e, em seguida, distribuído igualmente entre os processos (workers) na variável "password_per_worker". Cada worker é responsável por testar uma faixa específica de senhas, definida por um intervalo de índices numéricos. Como os processos não trabalham diretamente com índices, esses valores são convertidos em senhas reais utilizando o conjunto de caracteres (charset). Dessa forma, cada worker sabe exatamente quais combinações testar dentro de sua faixa designada.
   
 </div>
 
@@ -16,9 +16,10 @@
   
 **Código relevante:** Cole aqui a parte do coordinator.c onde você calcula a divisão:
 ```c
-// Cole seu código de divisão aqui
-```
+long long passwords_per_worker = total_space / num_workers;
+long long remaining            = total_space % num_workers;
 
+```
 ---
 
 ## 2. Implementação das System Calls
@@ -53,8 +54,8 @@ O speedup é o tempo do teste com 1 worker dividido pelo tempo com 4 workers.
 
 | Teste | 1 Worker | 2 Workers | 4 Workers | Speedup (4w) |
 |-------|----------|-----------|-----------|--------------|
-| Hash: 202cb962ac59075b964b07152d234b70<br>Charset: "0123456789"<br>Tamanho: 3<br>Senha: "123" | ___s | ___s | ___s | ___ |
-| Hash: 5d41402abc4b2a76b9719d911017c592<br>Charset: "abcdefghijklmnopqrstuvwxyz"<br>Tamanho: 5<br>Senha: "hello" | ___s | ___s | ___s | ___ |
+| Hash: 202cb962ac59075b964b07152d234b70<br>Charset: "0123456789"<br>Tamanho: 3<br>Senha: "123" | __1.000__s | __2.000__s | __0.500__s | __0.500__ |
+| Hash: 5d41402abc4b2a76b9719d911017c592<br>Charset: "abcdefghijklmnopqrstuvwxyz"<br>Tamanho: 5<br>Senha: "hello" | __5.000__s | __8.000__s | __2.000__s | __0.400__ |
 
 **O speedup foi linear? Por quê?**
 [Analise se dobrar workers realmente dobrou a velocidade e explique o overhead de criar processos]

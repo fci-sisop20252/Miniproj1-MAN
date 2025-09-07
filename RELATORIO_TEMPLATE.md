@@ -26,11 +26,33 @@ long long remaining            = total_space % num_workers;
 
 **Descreva como você usou fork(), execl() e wait() no coordinator:**
 
-[Explique em um parágrafo como você criou os processos, passou argumentos e esperou pela conclusão]
+A gente usou o fork() para criar um processo filho. No filho (quando pid == 0), os argumentos necessários (hash, senha inicial, senha final, charset, comprimento da senha e id do worker) são convertidos para strings quando necessário e passados ao execl(), que substitui o processo filho pela execução do binário worker com esses parâmetros. Se o execl() falhar, o filho imprime um erro e encerra. Já o processo pai guarda o PID do worker criado e continua criando os demais. Após iniciar todos os workers, o coordenador usa wait() em um laço para aguardar a finalização de cada filho, capturando o status de saída ou sinal de término. Assim, fork() cria os processos, execl() define a função específica de cada worker e wait() sincroniza o coordenador com o término dos filhos.
 
 **Código do fork/exec:**
 ```c
-// Cole aqui seu loop de criação de workers
+// pid_t pid = fork();
+
+if (pid < 0) {
+    perror("fork");
+    exit(1);
+}
+else if (pid == 0) {  
+    // Processo filho executa o worker
+    execl("./worker", "worker", target_hash, start_pass, end_pass, charset, 
+          password_len_str, worker_id_str, (char*)NULL);
+    perror("execl");
+    exit(1);
+}
+else {
+    // Processo pai armazena o PID do worker
+    workers[i] = pid;
+}
+
+while (finished_workers < num_workers) {
+    int status;
+    pid_t pid = wait(&status);
+    ...
+}
 ```
 
 ---
@@ -39,12 +61,13 @@ long long remaining            = total_space % num_workers;
 
 **Como você garantiu que apenas um worker escrevesse o resultado?**
 
-[Explique como você implementou uma escrita atômica e como isso evita condições de corrida]
-Leia sobre condições de corrida (aqui)[https://pt.stackoverflow.com/questions/159342/o-que-%C3%A9-uma-condi%C3%A7%C3%A3o-de-corrida]
+No projeto, o mecanismo escolhido foi o arquivo password_found.txt como ponto de comunicação. Para evitar condições de corrida, não existe compartilhamento simultâneo de memória entre workers, e a escrita é feita de forma atômica, cada worker, ao encontrar a senha, escreve no arquivo e encerra. Como a criação do arquivo é única e não há necessidade de múltiplos workers continuarem escrevendo, basta que o primeiro a encontrar crie o arquivo. Os demais, ao tentarem abrir o arquivo, encontram que ele já existe e não sobrescrevem o resultado. Isso garante que apenas o primeiro worker vencedor salva a senha, evitando inconsistências.
 
 **Como o coordinator consegue ler o resultado?**
 
-[Explique como o coordinator lê o arquivo de resultado e faz o parse da informação]
+Após todos os workers terminarem (coordenados com wait()), o processo principal (coordinator) abre o arquivo password_found.txt usando open() em modo somente leitura (O_RDONLY). Ele lê todo o conteúdo com read() em um buffer e garante o término da string com '\0'.
+
+O coordinator então usa strchr(buffer, ':') para localizar o separador. Assim, divide a string em duas partes: antes do : está o ID do worker, e depois está a senha encontrada. Por fim, ele calcula o hash MD5 da senha, compara com o hash alvo e imprime o resultado.
 
 ---
 

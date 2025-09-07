@@ -86,11 +86,8 @@ O speedup é o tempo do teste com 1 worker dividido pelo tempo com 4 workers.
 
 **O speedup foi linear? Por quê?**
   <div align="justify">
-  O speedup não foi linear
-
+  O speedup não foi linear pelo fato de, ao aumentar o número de 'worker' de 1 para 2 em ambos os testes, foi observado um aumento no tempo de execução em vez de uma redução. Isso se deve ao 'overhead de processos', que inclui o alto consumo de memória pelos 'workers', o custo de mútiplas chamadas fork() (acaba consumindo muito tempo) e a latência envolvida na comunicação entre o coordinator e os workers — tanto no envio de tarefas quanto na coleta de resultados. 
   </div>
-    
-[Analise se dobrar workers realmente dobrou a velocidade e explique o overhead de criar processos]
 
 ---
 

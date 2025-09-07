@@ -1,9 +1,9 @@
-# Relatório: Mini-Projeto 1 - Quebra-Senhas Paralelo
+# 📝Relatório: Mini-Projeto 1 - Quebra-Senhas Paralelo 🔐
 
-**Aluno(s):** André Doerner Duarte(10427938), Matheus Leonardo Cardoso Kroeff(10426434), Naoto Ushizaki(10437455)
+**Aluno(s):** <ins>André Doerner Duarte(10427938), Matheus Leonardo Cardoso Kroeff(10426434), Naoto Ushizaki(10437455)</ins>
 ---
 
-## 1. Estratégia de Paralelização
+## ♟️ 1. Estratégia de Paralelização
 
 **Como você dividiu o espaço de busca entre os workers?**
 
@@ -22,7 +22,7 @@ long long remaining            = total_space % num_workers;
 ```
 ---
 
-## 2. Implementação das System Calls
+##🧩2. Implementação das System Calls
 
 **Descreva como você usou fork(), execl() e wait() no coordinator:**
 <div align="justify">
@@ -58,14 +58,14 @@ while (finished_workers < num_workers) {
 
 ---
 
-## 3. Comunicação Entre Processos
+## 📡3. Comunicação Entre Processos
 
 **Como você garantiu que apenas um worker escrevesse o resultado?**
 <div align="justify">
 No projeto, o mecanismo escolhido foi o arquivo password_found.txt como ponto de comunicação. Para evitar condições de corrida, não existe compartilhamento simultâneo de memória entre workers, e a escrita é feita de forma atômica, cada worker, ao encontrar a senha, escreve no arquivo e encerra. Como a criação do arquivo é única e não há necessidade de múltiplos workers continuarem escrevendo, basta que o primeiro a encontrar crie o arquivo. Os demais, ao tentarem abrir o arquivo, encontram que ele já existe e não sobrescrevem o resultado. Isso garante que apenas o primeiro worker vencedor salva a senha, evitando inconsistências.
 </div>
 
-**Como o coordinator consegue ler o resultado?**
+<ins>**Como o coordinator consegue ler o resultado?**</ins>
 
 <div align="justify">
 Após todos os workers terminarem (coordenados com wait()), o processo principal (coordinator) abre o arquivo password_found.txt usando open() em modo somente leitura (O_RDONLY). Ele lê todo o conteúdo com read() em um buffer e garante o término da string com '\0'.
@@ -75,7 +75,7 @@ O coordinator então usa strchr(buffer, ':') para localizar o separador. Assim, 
 
 ---
 
-## 4. Análise de Performance
+## 🔎4. Análise de Performance
 Complete a tabela com tempos reais de execução:
 O speedup é o tempo do teste com 1 worker dividido pelo tempo com 4 workers.
 
@@ -91,9 +91,34 @@ O speedup é o tempo do teste com 1 worker dividido pelo tempo com 4 workers.
 
 ---
 
-## 5. Desafios e Aprendizados
+## 5. ⚙️Desafios e Aprendizados
 **Qual foi o maior desafio técnico que você enfrentou?**
-[Descreva um problema e como resolveu. Ex: "Tive dificuldade com o incremento de senha, mas resolvi tratando-o como um contador em base variável"]
+  <div align="justify">
+  O maior desafio técnico foi criar uma lógica robusta de sinalização, para identificar diferentes estados de finalização dos 'workers': seja quando um concluir corretamente o processo de quebra de senha, quando termina com um sinal específico ou quando encerra com erro.  
+  </div>
+
+  **Parte do código:**
+  ```c
+  // Caso worker tenha finalizado corretamente
+        if (WIFEXITED(status)) {
+            int exit_code = WEXITSTATUS(status); // Pega o codigo de saida
+            printf("Worker %3d [PID %d] terminou corretamente com codigo: %d\n", worker_id, pid, exit_code);
+        }
+        // Caso worker tenha finalizado com algum sinal específico (improvavel)
+        else if (WIFSIGNALED(status)) {
+            int exit_signal = WTERMSIG(status); // Pega o sinal retornado
+            printf("Worker %3d [PID %d] terminou com um sinal: %d\n", worker_id, pid, exit_signal);
+        }
+        // Caso worker tenha finalizado por algum erro
+        else {
+            printf("Worker %3d [PID %d] terminou de forma inesperada\n", worker_id, pid);
+        }
+
+  ```
+<ins>**Como o desafio foi resolvido:**</ins>
+<div align="justify">
+Foi realizado uma pesquisa sobre como é possível interpretar e 'coletar' o 'status' de um 'worker' após sua finalização. Descobriu-se que a biblioteca 'sys/wait.h' possuia comandos que permitem obter esse 'status' que para verificar os diferentes estados de finalização dos 'workers'.
+</div>
 
 ---
 
